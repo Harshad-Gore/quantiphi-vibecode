@@ -2,6 +2,7 @@
 node_modules/
 frontend/dist/
 frontend/.vite/
+*.timestamp-*.mjs
 # Env (never commit secrets)
 .env
 backend/.env
