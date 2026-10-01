@@ -1,0 +1,22 @@
+# Deps & build
+node_modules/
+frontend/dist/
+frontend/.vite/
+# Env (never commit secrets)
+.env
+backend/.env
+frontend/.env
+*.local
+# Logs / OS
+npm-debug.log*
+*.log
+.DS_Store
+Thumbs.db
+# IDE
+.vscode/
+.idea/
+# Mongo / dumps
+*.sqlite
+dump/
+# Temp
+C:\Users\harsh\AppData\Local\Temp\opencode/
