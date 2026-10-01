@@ -5,7 +5,7 @@ import EventCalendar from '../components/EventCalendar';
 import EventCard from '../components/EventCard';
 import ChatWidget from '../components/ChatWidget';
 
-const EMPTY_FILTERS = { keyword: '', city: '', day: null };
+const EMPTY_FILTERS = { keyword: '', city: '', day: null, scope: 'india' };
 
 function SkeletonCard() {
   return (
@@ -31,7 +31,9 @@ export default function Home({ user }) {
   const [feed, setFeed] = useState({ source: '', note: '' });
 
   const load = useCallback(async () => {
-    const params = { city: filters.city, keyword: filters.keyword };
+    const params = { keyword: filters.keyword, scope: filters.scope };
+    // City pins are India-scope only (worldwide drops them server-side too).
+    if (filters.scope === 'india' && filters.city) params.city = filters.city;
     if (filters.day) {
       params.startDate = new Date(filters.day + 'T00:00:00').toISOString();
       params.endDate = new Date(filters.day + 'T23:59:59').toISOString();
@@ -52,7 +54,7 @@ export default function Home({ user }) {
     } finally {
       setLoading(false);
     }
-  }, [filters.city, filters.keyword, filters.day, user?._id]);
+  }, [filters.city, filters.keyword, filters.day, filters.scope, user?._id]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -73,11 +75,26 @@ export default function Home({ user }) {
       <div className="space-y-4">
         <EventCalendar density={density} selected={filters.day} onSelect={(day) => { setChatEvents(null); setFilters((f) => ({ ...f, day })); }} />
         <div className="bg-inksoft border border-white/10 rounded-2xl p-4 space-y-3">
+          <div role="group" aria-label="Feed region" className="grid grid-cols-2 gap-1 rounded-xl bg-white/5 p-1">
+            {[
+              { v: 'india', label: 'India' },
+              { v: 'worldwide', label: 'Worldwide · live' },
+            ].map((o) => (
+              <button
+                key={o.v}
+                aria-pressed={filters.scope === o.v}
+                onClick={() => { setChatEvents(null); setFilters((f) => ({ ...f, scope: o.v, city: o.v === 'worldwide' ? '' : f.city })); }}
+                className={`rounded-lg px-2 py-2 min-h-[44px] text-xs font-semibold cursor-pointer transition-colors ${filters.scope === o.v ? 'bg-poster text-ink' : 'text-paper/60 hover:text-paper'}`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
           <label className="block text-xs text-paper/60">Search
             <input value={filters.keyword} onChange={(e) => { setChatEvents(null); setFilters((f) => ({ ...f, keyword: e.target.value })); }} placeholder="comedy, jazz, techno…" className="mt-1 w-full rounded-xl bg-white/5 px-3 py-2 text-sm text-paper placeholder:text-paper/30" />
           </label>
           <label className="block text-xs text-paper/60">City
-            <select value={filters.city} onChange={(e) => { setChatEvents(null); setFilters((f) => ({ ...f, city: e.target.value })); }} className="mt-1 w-full rounded-xl bg-white/5 px-3 py-2 text-sm text-paper">
+            <select value={filters.city} disabled={filters.scope === 'worldwide'} onChange={(e) => { setChatEvents(null); setFilters((f) => ({ ...f, city: e.target.value })); }} className="mt-1 w-full rounded-xl bg-white/5 px-3 py-2 text-sm text-paper disabled:opacity-40">
               {['', 'Mumbai', 'Delhi', 'Bengaluru', 'Pune', 'Goa'].map((c) => <option key={c} value={c} className="text-black">{c || 'All cities'}</option>)}
             </select>
           </label>
@@ -125,7 +142,7 @@ export default function Home({ user }) {
           </div>
         )}
       </div>
-      <ChatWidget onPick={setChatEvents} />
+      <ChatWidget scope={filters.scope} onPick={setChatEvents} />
     </div>
   );
 }

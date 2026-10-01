@@ -41,21 +41,25 @@ function parseIntent(text) {
   return { city, genre, startDate, endDate, keyword, keywordMerged: merged };
 }
 
-async function chatReply(message) {
+async function chatReply(message, scope = 'india') {
   const intent = parseIntent(message);
   const cityMap = { bangalore: 'Bengaluru' };
-  const city = cityMap[intent.city] || (intent.city ? intent.city[0].toUpperCase() + intent.city.slice(1) : '');
+  const worldwide = scope === 'worldwide';
+  // Worldwide mode drops the city pin (same rule as the feed: a city pin
+  // without a country pin yields nothing for Indian cities on Ticketmaster).
+  const city = worldwide ? '' : cityMap[intent.city] || (intent.city ? intent.city[0].toUpperCase() + intent.city.slice(1) : '');
   let { events, source } = await fetchEvents({
     keyword: intent.keywordMerged,
     city,
     startDate: intent.startDate?.toISOString(),
     endDate: intent.endDate?.toISOString(),
     size: 6,
+    scope,
   });
   let softened = false;
   if (!events.length && (intent.startDate || intent.endDate)) {
     // Soften: keep keyword+city, drop the date window so the user still gets useful picks.
-    const retry = await fetchEvents({ keyword: intent.keywordMerged, city, size: 6 });
+    const retry = await fetchEvents({ keyword: intent.keywordMerged, city, size: 6, scope });
     if (retry.events.length) {
       events = retry.events;
       source = retry.source;

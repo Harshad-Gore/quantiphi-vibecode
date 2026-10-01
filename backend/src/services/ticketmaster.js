@@ -39,21 +39,30 @@ function mockResult({ keyword = '', city = '', startDate, endDate }) {
   return { events, total: events.length, page: 0 };
 }
 
-async function fetchEvents({ keyword = '', city = '', startDate, endDate, size = 24, page = 0 }) {
+async function fetchEvents({ keyword = '', city = '', startDate, endDate, size = 24, page = 0, scope = 'india' }) {
   // Ticketmaster dashboard calls it "Consumer Key" — that IS the Discovery API key.
   // (Consumer Secret is only for OAuth apps; the event feed doesn't need it.)
   const apiKey = process.env.TICKETMASTER_API_KEY || process.env.TICKETMASTER_CONSUMER_KEY;
-  if (!apiKey) return { ...mockResult({ keyword, city, startDate, endDate }), source: 'mock' };
+  // Verified against the live API: countryCode=IN currently returns zero events
+  // (no India inventory), while an unscoped query returns real listings.
+  // So 'india' scope pins countryCode=IN with local-picks fallback, and
+  // 'worldwide' scope drops the country pin to show genuine live events.
+  const worldwide = scope === 'worldwide';
+  const countryCode = worldwide ? '' : process.env.TICKETMASTER_COUNTRY || 'IN';
+  // A city pin without a country pin still yields nothing for Indian cities,
+  // so worldwide mode intentionally ignores it (frontend clears it on switch).
+  const effCity = worldwide ? '' : city;
+  if (!apiKey) return { ...mockResult({ keyword, city: effCity, startDate, endDate }), source: 'mock' };
 
   const params = new URLSearchParams({
     apikey: apiKey,
     size: String(Math.min(Number(size) || 24, 100)),
     page: String(page || 0),
-    countryCode: process.env.TICKETMASTER_COUNTRY || 'IN',
     sort: 'date,asc',
   });
+  if (countryCode) params.set('countryCode', countryCode);
   if (keyword) params.set('keyword', keyword);
-  if (city) params.set('city', city);
+  if (effCity) params.set('city', effCity);
   if (startDate) params.set('startDateTime', new Date(startDate).toISOString().slice(0, 19) + 'Z');
   if (endDate) params.set('endDateTime', new Date(endDate).toISOString().slice(0, 19) + 'Z');
 
@@ -74,14 +83,14 @@ async function fetchEvents({ keyword = '', city = '', startDate, endDate, size =
       };
     }
     return {
-      ...mockResult({ keyword, city, startDate, endDate }),
+      ...mockResult({ keyword, city: effCity, startDate, endDate }),
       source: 'mock-fallback',
       note: 'Live Ticketmaster feed had no matches for these filters — showing local picks.',
     };
   } catch (err) {
     console.error('[ticketmaster] live feed failed, serving local picks:', err.message);
     return {
-      ...mockResult({ keyword, city, startDate, endDate }),
+      ...mockResult({ keyword, city: effCity, startDate, endDate }),
       source: 'mock-fallback',
       note: 'Live Ticketmaster feed unreachable — showing local picks.',
     };

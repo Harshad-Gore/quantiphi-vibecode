@@ -3,7 +3,7 @@ import { api } from '../lib/api';
 import { getSocket } from '../lib/socket';
 
 // Floating concierge: sends natural language to POST /api/chat (server-side NLU).
-export default function ChatWidget({ onPick }) {
+export default function ChatWidget({ onPick, scope = 'india' }) {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState([{ from: 'assistant', text: 'Hey! Tell me what kind of night you want — e.g. “comedy this weekend in Mumbai”.' }]);
   const [input, setInput] = useState('');
@@ -29,7 +29,7 @@ export default function ChatWidget({ onPick }) {
     setMsgs((p) => [...p, { from: 'user', text }]);
     setBusy(true);
     try {
-      const reply = await api.chat(text);
+      const reply = await api.chat(text, scope);
       setMsgs((p) => [...p, { from: 'assistant', text: reply.text }]);
       if (reply.events?.length) onPick?.(reply.events);
     } catch {

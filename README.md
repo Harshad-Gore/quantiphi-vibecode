@@ -71,7 +71,7 @@ in-memory stores), which is the fastest way to see the whole UI working.
 
 | Symptom | Cause & fix |
 |---|---|
-| Feed shows "Local picks" | No `TICKETMASTER_API_KEY`, key invalid, or live feed had no matches — by design the server falls back to local picks (see `note`). Paste the dashboard **Consumer Key** and restart the backend for live data. |
+| Feed shows "Local picks" | No `TICKETMASTER_API_KEY`, key invalid, or live feed had no matches — by design the server falls back to local picks (see `note`). Paste the dashboard **Consumer Key** and restart the backend for live data. Note: Ticketmaster's Discovery feed currently carries no India inventory (`countryCode=IN` returns zero), so India-scope always falls back; switch the feed toggle to **Worldwide · live** to browse genuine live Ticketmaster events. |
 | `source: mock`, `db: false` | Both optionals unset — expected in zero-config mode. |
 | Empty page / "Could not reach the event feed" | Backend not running or wrong `VITE_API_URL`. Start `npm run dev:backend` and confirm `/api/health` responds. |
 | Mongo connection error | Password with `@ / ? #` must be percent-encoded; user needs readWrite on the `vibecheck` db; Atlas cluster must allow your IP (Network Access → Allow). |

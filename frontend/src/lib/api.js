@@ -20,6 +20,6 @@ export const api = {
   shareLink: (body) => req('/api/share-links', { method: 'POST', body: JSON.stringify(body) }),
   trackInvite: (code, eventId) =>
     req(`/api/share-links/${encodeURIComponent(code)}/track${eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''}`),
-  chat: (message) => req('/api/chat', { method: 'POST', body: JSON.stringify({ message }) }),
+  chat: (message, scope) => req('/api/chat', { method: 'POST', body: JSON.stringify({ message, scope }) }),
   remind: (body) => req('/api/reminders', { method: 'POST', body: JSON.stringify(body) }),
 };

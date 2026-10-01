@@ -4,11 +4,11 @@ const { friendsAttending } = require('../services/vibeService');
 
 const router = express.Router();
 
-// GET /api/events?keyword=&city=&startDate=&endDate=&page=&size=
+// GET /api/events?keyword=&city=&startDate=&endDate=&page=&size=&scope=india|worldwide
 router.get('/', async (req, res, next) => {
   try {
-    const { keyword = '', city = '', startDate, endDate, page = 0, size = 24 } = req.query;
-    const data = await fetchEvents({ keyword, city, startDate, endDate, page: Number(page), size: Number(size) });
+    const { keyword = '', city = '', startDate, endDate, page = 0, size = 24, scope = 'india' } = req.query;
+    const data = await fetchEvents({ keyword, city, startDate, endDate, page: Number(page), size: Number(size), scope });
     // Enrich with server-computed vibe counts (kept cheap: RSVP counts only when DB present)
     const events = await Promise.all(
       data.events.map(async (e) => ({ ...e, vibe: await friendsAttending(e.id) }))
