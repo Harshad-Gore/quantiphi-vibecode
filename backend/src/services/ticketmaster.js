@@ -20,28 +20,30 @@ function normaliseTicketmaster(doc) {
   };
 }
 
+function mockResult({ keyword = '', city = '', startDate, endDate }) {
+  let events = buildMockEvents();
+  if (keyword) {
+    const tokens = String(keyword).toLowerCase().split(/\s+/).filter(Boolean);
+    events = events.filter((e) => {
+      const hay = `${e.title} ${e.venue} ${e.genre}`.toLowerCase();
+      return tokens.every((tok) => hay.includes(tok));
+    });
+  }
+  if (city) {
+    const c = city.toLowerCase();
+    events = events.filter((e) => e.city.toLowerCase().includes(c));
+  }
+  if (startDate) events = events.filter((e) => new Date(e.startsAt) >= new Date(startDate));
+  if (endDate) events = events.filter((e) => new Date(e.startsAt) <= new Date(endDate));
+  events.sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt));
+  return { events, total: events.length, page: 0 };
+}
+
 async function fetchEvents({ keyword = '', city = '', startDate, endDate, size = 24, page = 0 }) {
   // Ticketmaster dashboard calls it "Consumer Key" — that IS the Discovery API key.
   // (Consumer Secret is only for OAuth apps; the event feed doesn't need it.)
   const apiKey = process.env.TICKETMASTER_API_KEY || process.env.TICKETMASTER_CONSUMER_KEY;
-  if (!apiKey) {
-    let events = buildMockEvents();
-    if (keyword) {
-      const tokens = String(keyword).toLowerCase().split(/\s+/).filter(Boolean);
-      events = events.filter((e) => {
-        const hay = `${e.title} ${e.venue} ${e.genre}`.toLowerCase();
-        return tokens.every((tok) => hay.includes(tok));
-      });
-    }
-    if (city) {
-      const c = city.toLowerCase();
-      events = events.filter((e) => e.city.toLowerCase().includes(c));
-    }
-    if (startDate) events = events.filter((e) => new Date(e.startsAt) >= new Date(startDate));
-    if (endDate) events = events.filter((e) => new Date(e.startsAt) <= new Date(endDate));
-    events.sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt));
-    return { events, total: events.length, page: 0, source: 'mock' };
-  }
+  if (!apiKey) return { ...mockResult({ keyword, city, startDate, endDate }), source: 'mock' };
 
   const params = new URLSearchParams({
     apikey: apiKey,
@@ -55,16 +57,35 @@ async function fetchEvents({ keyword = '', city = '', startDate, endDate, size =
   if (startDate) params.set('startDateTime', new Date(startDate).toISOString().slice(0, 19) + 'Z');
   if (endDate) params.set('endDateTime', new Date(endDate).toISOString().slice(0, 19) + 'Z');
 
-  const res = await doFetch(`https://app.ticketmaster.com/discovery/v2/events.json?${params}`);
-  if (!res.ok) throw new Error(`Ticketmaster upstream ${res.status}`);
-  const json = await res.json();
-  const docs = json._embedded?.events || [];
-  return {
-    events: docs.map(normaliseTicketmaster).filter((e) => e.startsAt),
-    total: json.page?.totalElements ?? docs.length,
-    page: json.page?.number ?? 0,
-    source: 'ticketmaster',
-  };
+  // Never leave the UI empty: any live-feed failure or zero-result set falls
+  // back to local picks (server-side), flagged via `source` + `note`.
+  try {
+    const res = await doFetch(`https://app.ticketmaster.com/discovery/v2/events.json?${params}`);
+    if (!res.ok) throw new Error(`Ticketmaster upstream ${res.status}`);
+    const json = await res.json();
+    const docs = json._embedded?.events || [];
+    const events = docs.map(normaliseTicketmaster).filter((e) => e.startsAt);
+    if (events.length) {
+      return {
+        events,
+        total: json.page?.totalElements ?? docs.length,
+        page: json.page?.number ?? 0,
+        source: 'ticketmaster',
+      };
+    }
+    return {
+      ...mockResult({ keyword, city, startDate, endDate }),
+      source: 'mock-fallback',
+      note: 'Live Ticketmaster feed had no matches for these filters — showing local picks.',
+    };
+  } catch (err) {
+    console.error('[ticketmaster] live feed failed, serving local picks:', err.message);
+    return {
+      ...mockResult({ keyword, city, startDate, endDate }),
+      source: 'mock-fallback',
+      note: 'Live Ticketmaster feed unreachable — showing local picks.',
+    };
+  }
 }
 
 module.exports = { fetchEvents, normaliseTicketmaster };

@@ -40,7 +40,7 @@ export default function EventCard({ event, user, rsvpd, onChanged }) {
   return (
     <article className="group relative bg-paper text-ink rounded-2xl overflow-hidden flex flex-col">
       <div className="relative h-36 bg-inksoft">
-        {event.imageUrl && <img src={event.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />}
+        {event.imageUrl && <img src={event.imageUrl} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover" />}
         <span className="absolute top-2 left-2 text-[11px] font-semibold px-2 py-1 rounded-full bg-ink/80 text-poster">{event.genre}</span>
         <span className="absolute top-2 right-2 text-[11px] font-semibold px-2 py-1 rounded-full bg-poster text-ink">
           {friends} friends attending
@@ -51,10 +51,10 @@ export default function EventCard({ event, user, rsvpd, onChanged }) {
         <p className="text-sm text-ink/70">{event.venue}{event.city ? ` · ${event.city}` : ''}</p>
         <p className="text-sm font-medium">{when ? when.toLocaleString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : 'Date TBA'}</p>
         <div className="mt-3 flex gap-2">
-          <button disabled={busy || rsvpd} onClick={doRsvp} className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold ${rsvpd ? 'bg-vipteal/30 text-ink/60' : 'bg-ink text-paper hover:bg-black'}`}>
+          <button disabled={busy || rsvpd} onClick={doRsvp} className={`flex-1 rounded-xl px-3 py-2.5 min-h-[44px] text-sm font-semibold cursor-pointer transition-colors ${rsvpd ? 'bg-vipteal/30 text-ink/60' : 'bg-ink text-paper hover:bg-black'}`}>
             {rsvpd ? 'RSVP’d ✓' : busy ? 'Saving…' : 'Interested / RSVP'}
           </button>
-          <button disabled={busy} onClick={doShare} title="Generate a share link to invite friends" className="rounded-xl px-3 py-2 text-sm font-semibold bg-vibepink text-white hover:brightness-110">
+          <button disabled={busy} onClick={doShare} title="Generate a share link to invite friends" className="rounded-xl px-3 py-2.5 min-h-[44px] text-sm font-semibold bg-vibepink text-white hover:brightness-110 cursor-pointer transition">
             Invite
           </button>
         </div>
