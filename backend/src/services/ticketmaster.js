@@ -21,7 +21,9 @@ function normaliseTicketmaster(doc) {
 }
 
 async function fetchEvents({ keyword = '', city = '', startDate, endDate, size = 24, page = 0 }) {
-  const apiKey = process.env.TICKETMASTER_API_KEY;
+  // Ticketmaster dashboard calls it "Consumer Key" — that IS the Discovery API key.
+  // (Consumer Secret is only for OAuth apps; the event feed doesn't need it.)
+  const apiKey = process.env.TICKETMASTER_API_KEY || process.env.TICKETMASTER_CONSUMER_KEY;
   if (!apiKey) {
     let events = buildMockEvents();
     if (keyword) {

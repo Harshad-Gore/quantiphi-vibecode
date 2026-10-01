@@ -25,7 +25,7 @@ app.use(express.json({ limit: '256kb' }));
 app.use(morgan('dev'));
 app.use(rateLimit({ windowMs: 60_000, max: 300 }));
 
-app.get('/api/health', (req, res) => res.json({ ok: true, time: new Date().toISOString(), source: process.env.TICKETMASTER_API_KEY ? 'ticketmaster' : 'mock', db: !!process.env.MONGODB_URI }));
+app.get('/api/health', (req, res) => res.json({ ok: true, time: new Date().toISOString(), source: (process.env.TICKETMASTER_API_KEY || process.env.TICKETMASTER_CONSUMER_KEY) ? 'ticketmaster' : 'mock', db: !!process.env.MONGODB_URI }));
 
 app.use('/api/events', eventsRoute);
 app.use('/api/rsvps', rsvpsRoute);

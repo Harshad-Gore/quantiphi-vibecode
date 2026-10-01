@@ -34,7 +34,7 @@ npm run dev:backend   # :8080
 npm run dev:frontend  # :5173
 ```
 
-Get a free Ticketmaster key at https://developer.ticketmaster.com/ and MongoDB from https://www.mongodb.com/atlas — or run without both (deterministic mock catalogue + in-memory stores so the calendar always lights up).
+Get a free Ticketmaster key at https://developer.ticketmaster.com/ — on your dashboard copy the **Consumer Key** into `TICKETMASTER_API_KEY` (the **Consumer Secret** is OAuth-only and not needed for the event feed) — or run without both (deterministic mock catalogue + in-memory stores so the calendar always lights up).
 
 ## API quick reference
 
