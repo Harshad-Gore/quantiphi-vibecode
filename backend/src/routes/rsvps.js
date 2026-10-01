@@ -1,11 +1,22 @@
 const express = require('express');
 const { z } = require('zod');
+const { Types } = require('mongoose');
 const Rsvp = require('../models/Rsvp');
 const { memory } = require('../services/vibeService');
 
 const router = express.Router();
 const hasDB = () => !!process.env.MONGODB_URI;
 const memRsvps = []; // fallback store when Mongo is absent
+
+// In DB mode ids must be ObjectIds. A plain string means the client holds a
+// stale identity (e.g. page loaded while the API was down) — tell it to reload.
+function assertUserId(userId, res) {
+  if (hasDB() && !Types.ObjectId.isValid(userId)) {
+    res.status(400).json({ error: 'Unknown session. Please reload the page and try again.' });
+    return false;
+  }
+  return true;
+}
 
 const RsvpBody = z.object({
   userId: z.string().min(1),
@@ -22,6 +33,7 @@ const RsvpBody = z.object({
 router.post('/', async (req, res, next) => {
   try {
     const body = RsvpBody.parse(req.body);
+    if (!assertUserId(body.userId, res)) return;
     if (!hasDB()) {
       const exists = memRsvps.find((r) => r.userId === body.userId && r.eventId === body.eventId);
       if (exists) return res.json(exists);
@@ -49,6 +61,7 @@ router.get('/', async (req, res, next) => {
   try {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: 'userId query param required' });
+    if (!assertUserId(userId, res)) return;
     if (!hasDB()) return res.json(memRsvps.filter((r) => r.userId === userId).sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt)));
     const docs = await Rsvp.find({ userId }).sort({ startsAt: 1 });
     res.json(docs);
